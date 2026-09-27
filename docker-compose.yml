@@ -1,0 +1,21 @@
+services:
+  otp-gateway:
+    build:
+      context: src/OtpGateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - otp-data:/app/data
+      - otp-sessions:/app/sessions
+    environment:
+      - ApiKey=${OTP_API_KEY}
+      - ConnectionStrings__Default=Data Source=/app/data/otp.db
+      - WhatsApp__TemplateName=authentication_otp
+      - WhatsApp__TemplateLanguage=ar
+      - Email__Enabled=false
+    restart: unless-stopped
+
+volumes:
+  otp-data:
+  otp-sessions:

@@ -1,0 +1,6 @@
+@OtpGateway_HostAddress = http://localhost:5299
+
+GET {{OtpGateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

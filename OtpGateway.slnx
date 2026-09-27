@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OtpGateway.Setup/OtpGateway.Setup.csproj" />
+    <Project Path="src/OtpGateway/OtpGateway.csproj" />
+  </Folder>
+</Solution>
