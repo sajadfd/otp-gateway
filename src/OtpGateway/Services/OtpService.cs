@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OtpGateway.Channels;
-using OtpGateway.Data;
-using OtpGateway.Data.Entities;
+using OtpGateway.Storage;
+using OtpGateway.Storage.Entities;
 
 namespace OtpGateway.Services;
 

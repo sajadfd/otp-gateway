@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using OtpGateway.Data;
-using OtpGateway.Data.Entities;
+using OtpGateway.Storage;
+using OtpGateway.Storage.Entities;
 using TL;
 using WTelegram;
 

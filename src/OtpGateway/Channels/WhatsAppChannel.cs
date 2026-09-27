@@ -2,8 +2,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using OtpGateway.Data;
-using OtpGateway.Data.Entities;
+using OtpGateway.Storage;
+using OtpGateway.Storage.Entities;
 
 namespace OtpGateway.Channels;
 

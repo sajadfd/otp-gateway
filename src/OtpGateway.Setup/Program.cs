@@ -1,14 +1,28 @@
 using Microsoft.EntityFrameworkCore;
-using OtpGateway.Data;
-using OtpGateway.Data.Entities;
+using OtpGateway.Storage;
+using OtpGateway.Storage.Entities;
 using TL;
 using WTelegram;
 
-var dbPath = args.FirstOrDefault(a => a.StartsWith("--db="))?[5..] ?? "data/otp.db";
-var sessionDir = args.FirstOrDefault(a => a.StartsWith("--sessions="))?[11..] ?? "sessions";
+var solutionRoot = FindSolutionRoot(Directory.GetCurrentDirectory());
+var dbPath = args.FirstOrDefault(a => a.StartsWith("--db="))?[5..]
+    ?? Path.Combine(solutionRoot, "data", "otp.db");
+var sessionDir = args.FirstOrDefault(a => a.StartsWith("--sessions="))?[11..]
+    ?? Path.Combine(solutionRoot, "sessions");
 
-Directory.CreateDirectory(Path.GetDirectoryName(dbPath) ?? "data");
+Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 Directory.CreateDirectory(sessionDir);
+
+static string FindSolutionRoot(string start)
+{
+    var dir = start;
+    while (dir != null)
+    {
+        if (Directory.GetFiles(dir, "*.sln*").Length > 0) return dir;
+        dir = Path.GetDirectoryName(dir);
+    }
+    return start;
+}
 
 var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
 optionsBuilder.UseSqlite($"Data Source={dbPath}");
@@ -87,7 +101,7 @@ async Task LoginTelegram()
         return;
     }
 
-    var sessionPath = Path.Combine(sessionDir, $"tg_{phone.Replace("+", "")}.session");
+    var sessionPath = Path.GetFullPath(Path.Combine(sessionDir, $"tg_{phone.Replace("+", "")}.session"));
 
     Console.WriteLine($"\nSession will be saved to: {sessionPath}");
     Console.WriteLine("Starting login...\n");

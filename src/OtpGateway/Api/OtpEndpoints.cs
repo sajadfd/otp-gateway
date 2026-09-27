@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OtpGateway.Api.Dtos;
 using OtpGateway.Channels;
-using OtpGateway.Data;
+using OtpGateway.Storage;
 using OtpGateway.Services;
 
 namespace OtpGateway.Api;
@@ -115,7 +115,7 @@ public static class OtpEndpoints
 
         admin.MapPost("/channels/whatsapp", async (WhatsAppNumberDto dto, AppDbContext db, CancellationToken ct) =>
         {
-            var number = new Data.Entities.WhatsAppNumber
+            var number = new Storage.Entities.WhatsAppNumber
             {
                 PhoneNumberId = dto.PhoneNumberId,
                 DisplayPhone = dto.DisplayPhone,
@@ -130,7 +130,7 @@ public static class OtpEndpoints
 
         admin.MapPost("/channels/telegram", async (TelegramAccountDto dto, AppDbContext db, CancellationToken ct) =>
         {
-            var account = new Data.Entities.TelegramAccount
+            var account = new Storage.Entities.TelegramAccount
             {
                 Phone = dto.Phone,
                 ApiId = dto.ApiId,

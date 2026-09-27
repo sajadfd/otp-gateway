@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using OtpGateway.Data;
+using OtpGateway.Storage;
 
 namespace OtpGateway.Services;
 

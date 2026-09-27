@@ -4,13 +4,19 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using OtpGateway.Api;
 using OtpGateway.Channels;
-using OtpGateway.Data;
+using OtpGateway.Storage;
 using OtpGateway.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=data/otp.db"));
+var solutionRoot = FindSolutionRoot(builder.Environment.ContentRootPath);
+var defaultDb = Path.Combine(solutionRoot, "data", "otp.db");
+Directory.CreateDirectory(Path.GetDirectoryName(defaultDb)!);
+
+var connStr = builder.Configuration.GetConnectionString("Default")
+    ?? $"Data Source={defaultDb}";
+
+builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlite(connStr));
 
 builder.Services.AddHttpClient();
 
@@ -63,3 +69,14 @@ app.UseAuthorization();
 app.MapOtpEndpoints();
 
 app.Run();
+
+static string FindSolutionRoot(string start)
+{
+    var dir = start;
+    while (dir != null)
+    {
+        if (Directory.GetFiles(dir, "*.sln*").Length > 0) return dir;
+        dir = Path.GetDirectoryName(dir);
+    }
+    return start;
+}
