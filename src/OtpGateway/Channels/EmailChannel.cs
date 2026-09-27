@@ -34,7 +34,7 @@ public sealed class EmailChannel : IOtpChannel
             var port = _config.GetValue("Email:SmtpPort", 587);
             var user = _config["Email:Username"] ?? "";
             var pass = _config["Email:Password"] ?? "";
-            var fromName = _config["Email:FromName"] ?? "Baity";
+            var fromName = _config["Email:FromName"] ?? "OTP Gateway";
             var subject = _config["Email:Subject"] ?? "Your Verification Code";
 
             var message = new MimeMessage();

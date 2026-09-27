@@ -74,27 +74,35 @@ public class OtpService
 
         foreach (var channel in orderedChannels)
         {
-            if (!await channel.IsAvailableForAsync(phone, email, ct))
+            try
             {
-                _logger.LogDebug("Channel {Channel} not available for {Phone}", channel.Name, phone);
-                continue;
-            }
+                if (!await channel.IsAvailableForAsync(phone, email, ct))
+                {
+                    _logger.LogDebug("Channel {Channel} not available for {Phone}", channel.Name, phone);
+                    continue;
+                }
 
-            var result = await channel.SendAsync(request, ct);
-            if (result.Success)
+                var result = await channel.SendAsync(request, ct);
+                if (result.Success)
+                {
+                    record.ChannelUsed = result.Channel;
+                    db.Otps.Add(record);
+                    await db.SaveChangesAsync(ct);
+
+                    _logger.LogInformation("OTP {Id} sent via {Channel} to {Phone}",
+                        record.Id, result.Channel, phone);
+                    return new SendResult(true, record.Id, result.Channel, record.Id, null);
+                }
+
+                errors.Add($"{channel.Name}: {result.Error}");
+                _logger.LogWarning("Channel {Channel} failed for {Phone}: {Error}",
+                    channel.Name, phone, result.Error);
+            }
+            catch (Exception ex)
             {
-                record.ChannelUsed = result.Channel;
-                db.Otps.Add(record);
-                await db.SaveChangesAsync(ct);
-
-                _logger.LogInformation("OTP {Id} sent via {Channel} to {Phone}",
-                    record.Id, result.Channel, phone);
-                return new SendResult(true, record.Id, result.Channel, record.Id, null);
+                errors.Add($"{channel.Name}: {ex.Message}");
+                _logger.LogError(ex, "Channel {Channel} threw exception for {Phone}", channel.Name, phone);
             }
-
-            errors.Add($"{channel.Name}: {result.Error}");
-            _logger.LogWarning("Channel {Channel} failed for {Phone}: {Error}",
-                channel.Name, phone, result.Error);
         }
 
         return new SendResult(false, null, null, null,

@@ -2,9 +2,17 @@
 
 A standalone, multi-channel OTP (One-Time Password) microservice that sends verification codes through the cheapest available channel first, falling back automatically to more expensive ones.
 
-**Save money.** Instead of paying $0.05+ per SMS through Twilio, OTP Gateway sends via Telegram (free) → WhatsApp ($0.008) → Email (free) → SMS (last resort).
+**Save money.** Instead of paying $0.05+ per SMS, OTP Gateway sends via Telegram (free) → WhatsApp ($0.008) → Email (free) → SMS (last resort).
 
-## How It Works
+---
+
+**خدمة مستقلة لإرسال رموز التحقق (OTP) عبر عدة قنوات، تبدأ بالأرخص تلقائياً.**
+
+**وفّر فلوسك.** بدال ما تدفع $0.05+ لكل SMS، الخدمة تبعث عبر تلكرام (مجاني) ← واتساب ($0.008) ← إيميل (مجاني) ← SMS (آخر خيار).
+
+---
+
+## How It Works / كيف تعمل
 
 ```
 Your Backend                OTP Gateway              Channels
@@ -25,83 +33,80 @@ Your Backend                OTP Gateway              Channels
     │◄── {verified: true} ──────│                        │
 ```
 
-### Channel Cascade (Priority Order)
+### Channel Cascade / ترتيب القنوات
 
-| # | Channel | Cost | How |
+| # | Channel / القناة | Cost / التكلفة | How / الطريقة |
 |---|---------|------|-----|
-| 1 | **Telegram** | Free | Userbot sends message to recipient's Telegram |
-| 2 | **WhatsApp** | ~$0.008/msg (Iraq) | Meta Cloud API, no Twilio middleman |
-| 3 | **Email** | Free | SMTP (only if email is provided) |
+| 1 | **Telegram** | Free / مجاني | Userbot sends message to recipient's Telegram |
+| 2 | **WhatsApp** | ~$0.008/msg | Meta Cloud API direct, no middleman |
+| 3 | **Email** | Free / مجاني | SMTP (only if email is provided) |
 | 4 | **SMS** | $0.05+/msg | Twilio or custom webhook (last resort) |
 
 Each channel is tried in order. First success wins. If a channel fails, it falls through to the next.
 
-## Quick Start
+كل قناة تُجرب بالترتيب. أول نجاح يفوز. إذا فشلت قناة، ينتقل للتالية تلقائياً.
 
-### Prerequisites
+## Quick Start / البداية السريعة
+
+### Prerequisites / المتطلبات
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- A Telegram account with `api_id`/`api_hash` from [my.telegram.org](https://my.telegram.org/apps)
+- Telegram `api_id` & `api_hash` from [my.telegram.org](https://my.telegram.org/apps)
 - (Optional) Meta Business account for WhatsApp
 - (Optional) SMTP credentials for email
 - (Optional) Twilio account for SMS fallback
 
-### 1. Clone & Build
+### 1. Clone & Build / استنساخ وبناء
 
 ```bash
-git clone <repo-url> otp-gateway
+git clone https://github.com/sajadfd/otp-gateway.git
 cd otp-gateway
 dotnet build
 ```
 
-### 2. Set Up Telegram Account
+### 2. Set Up Telegram / إعداد التلكرام
 
 ```bash
-cd src/OtpGateway.Setup
-dotnet run -- login
+dotnet run --project src/OtpGateway.Setup -- login
 ```
 
-This will:
-1. Ask for your `api_id`, `api_hash`, and phone number
-2. Send a verification code to your Telegram app
-3. Save the session file for the server to use
-4. Register the account in the database
+This will ask for your `api_id`, `api_hash`, phone number, then send a verification code to your Telegram.
 
-> **Important:** Use a dedicated SIM card, not your personal number. Telegram userbot usage violates Telegram's ToS and the account may be banned. Having multiple accounts ready for rotation mitigates this risk.
+هذا الأمر يسألك عن `api_id` و `api_hash` ورقم الهاتف، ثم يرسل رمز تحقق لتلكرامك.
 
-### 3. Configure
+> **Important / مهم:** Use a dedicated SIM card. Telegram userbot usage may violate Telegram's ToS. Having multiple accounts for rotation mitigates risk.
+>
+> استخدم شريحة مخصصة. استخدام userbot قد يخالف شروط تلكرام. وجود عدة حسابات للتدوير يقلل المخاطر.
+
+### 3. Configure / الإعدادات
 
 Edit `src/OtpGateway/appsettings.json` or use environment variables:
 
 ```bash
-# Required
+# Required / مطلوب
 export ApiKey="your-secure-api-key-here"
 
-# WhatsApp (optional - add via setup tool or API)
-# Telegram accounts are added via the setup tool (step 2)
-
-# Email (optional)
+# Email (optional / اختياري)
 export Email__Enabled=true
 export Email__SmtpHost=smtp.gmail.com
 export Email__Username=noreply@example.com
 export Email__Password=your-app-password
 
-# SMS fallback (optional)
+# SMS fallback (optional / اختياري)
 export Sms__Enabled=true
 export Sms__Twilio__AccountSid=AC...
 export Sms__Twilio__AuthToken=...
 export Sms__Twilio__FromNumber=+1234567890
 
-# Webhook callback (optional - notifies your backend)
+# Webhook callback (optional / اختياري)
 export Webhook__Url=https://your-backend.com/otp/callback
 export Webhook__Secret=your-webhook-secret
 ```
 
-### 4. Run
+### 4. Run / التشغيل
 
 ```bash
-cd src/OtpGateway
-dotnet run
+dotnet run --project src/OtpGateway
 ```
 
 Or with Docker:
@@ -110,13 +115,13 @@ Or with Docker:
 docker compose up -d
 ```
 
-The server starts on port 8080 (configurable via `ASPNETCORE_URLS`).
-
-## API Reference
+## API Reference / مرجع الـ API
 
 All endpoints except `/health` require the `X-Api-Key` header.
 
-### Send OTP
+جميع النقاط ما عدا `/health` تتطلب هيدر `X-Api-Key`.
+
+### Send OTP / إرسال رمز التحقق
 
 ```http
 POST /otp/send
@@ -141,24 +146,14 @@ X-Api-Key: your-key
 }
 ```
 
-**Response (429 — rate limited):**
-```json
-{
-  "success": false,
-  "otpId": null,
-  "channel": null,
-  "error": "Cooldown active. Wait 45 seconds."
-}
-```
-
 | Field | Required | Description |
 |-------|----------|-------------|
 | `phone` | Yes | Phone with country code |
 | `email` | No | Enables email fallback |
-| `preferredChannel` | No | Force a specific channel: `telegram`, `whatsapp`, `email`, `sms` |
+| `preferredChannel` | No | Force a channel: `telegram`, `whatsapp`, `email`, `sms` |
 | `ref` | No | Your reference ID (returned in webhooks) |
 
-### Verify OTP
+### Verify OTP / التحقق من الرمز
 
 ```http
 POST /otp/verify
@@ -181,7 +176,7 @@ X-Api-Key: your-key
 }
 ```
 
-### Health Check
+### Health Check / فحص الحالة
 
 ```http
 GET /health
@@ -189,129 +184,98 @@ GET /health
 
 No authentication required. Returns channel status and 24h stats.
 
-### Admin: List Channels
+### Admin Endpoints / نقاط الإدارة
 
-```http
-GET /admin/channels
-X-Api-Key: your-key
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/admin/channels` | List all configured channels |
+| `POST` | `/admin/channels/whatsapp` | Add a WhatsApp number |
+| `POST` | `/admin/channels/telegram` | Add a Telegram account |
+| `PUT` | `/admin/channels/{type}/{id}/toggle` | Enable/disable a channel |
+| `POST` | `/admin/channels/{type}/{id}/reset` | Reset failure counter |
+| `GET` | `/admin/stats?days=7` | Daily OTP stats by channel |
 
-Returns all Telegram accounts and WhatsApp numbers with their status.
+## Message Templates / قوالب الرسائل
 
-### Admin: Add WhatsApp Number
+Customize messages per channel in `appsettings.json`:
 
-```http
-POST /admin/channels/whatsapp
-Content-Type: application/json
-X-Api-Key: your-key
+خصّص رسالة كل قناة من `appsettings.json`:
 
+```json
 {
-  "phoneNumberId": "123456789",
-  "displayPhone": "+964 770 123 4567",
-  "accessToken": "EAA...",
-  "wabaId": "987654321"
+  "Telegram": {
+    "MessageTemplate": "🔐 Your code: *{code}*\nValid for 5 minutes."
+  },
+  "Sms": {
+    "MessageTemplate": "Your verification code: {code}"
+  }
 }
 ```
 
-### Admin: Toggle Channel
+**Available variables / المتغيرات المتاحة:** `{code}`, `{phone}`, `{ref}`
 
-```http
-PUT /admin/channels/whatsapp/1/toggle
-X-Api-Key: your-key
-```
-
-### Admin: Reset Failed Channel
-
-```http
-POST /admin/channels/telegram/1/reset
-X-Api-Key: your-key
-```
-
-### Admin: Stats
-
-```http
-GET /admin/stats?days=7
-X-Api-Key: your-key
-```
-
-Returns daily OTP counts grouped by channel.
+> WhatsApp uses Meta-approved templates configured in Meta Business Suite.
+>
+> واتساب يستخدم قوالب معتمدة من Meta تُعدّ من Meta Business Suite.
 
 ## Webhook Callbacks
 
-If `Webhook:Url` is configured, the gateway sends fire-and-forget POST requests on events:
+If `Webhook:Url` is configured, the gateway sends fire-and-forget POST requests:
 
-**Event: `otp.sent`**
-```json
-{
-  "otp_id": "...",
-  "phone": "+9647701234567",
-  "channel": "telegram",
-  "ref": "registration-42",
-  "timestamp": "2026-09-27T12:00:00Z"
-}
-```
+| Event | When |
+|-------|------|
+| `otp.sent` | After successful send |
+| `otp.verified` | After successful verification |
 
-**Event: `otp.verified`**
-```json
-{
-  "otp_id": "...",
-  "phone": "+9647701234567",
-  "channel": "telegram",
-  "timestamp": "2026-09-27T12:01:30Z"
-}
-```
+Headers: `X-Event-Type` and `X-Webhook-Secret`.
 
-Headers:
-- `X-Event-Type`: `otp.sent` or `otp.verified`
-- `X-Webhook-Secret`: Your configured secret (for verification)
+## Multi-Number Rotation / تدوير الأرقام
 
-## Multi-Number Rotation
-
-Both Telegram and WhatsApp support multiple numbers with automatic rotation:
+Both Telegram and WhatsApp support multiple numbers:
 
 - **Round-robin** distributes load across numbers
 - **Auto-disable** after 5 consecutive failures
 - **Daily counter reset** at midnight UTC
 - **Manual reset** via `POST /admin/channels/{type}/{id}/reset`
 
-Add more numbers anytime — via the setup CLI or the admin API.
+Add more numbers anytime via the setup CLI or the admin API.
 
-## Rate Limiting
+أضف أرقام بأي وقت عبر أداة الإعداد أو الـ API.
 
-**Per-user (phone):**
-- 60-second cooldown between sends
-- 10 OTPs per day per phone number
+## Rate Limiting / حدود الاستخدام
+
+**Per phone / لكل رقم:**
+- 60s cooldown between sends
+- 10 OTPs per day
 - 5 verification attempts per OTP
 
-**Per-IP:**
-- 20 requests per minute on `/otp/*` endpoints
+**Per IP:**
+- 20 requests/minute on `/otp/*`
 
-## Configuration Reference
+## Configuration Reference / مرجع الإعدادات
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `ApiKey` | — | Required. API key for all authenticated endpoints |
+| `ApiKey` | — | API key for authenticated endpoints |
 | `Otp:CodeLength` | 4 | OTP code length |
 | `Otp:ExpiryMinutes` | 5 | Code validity duration |
-| `Otp:CooldownSeconds` | 60 | Minimum gap between sends for same phone |
+| `Otp:CooldownSeconds` | 60 | Min gap between sends per phone |
 | `Otp:DailyLimit` | 10 | Max OTPs per phone per day |
 | `Otp:MaxAttempts` | 5 | Max verification tries per OTP |
+| `Telegram:MessageTemplate` | (built-in) | Telegram message template |
 | `WhatsApp:TemplateName` | `authentication_otp` | Meta-approved template name |
 | `WhatsApp:TemplateLanguage` | `ar` | Template language code |
 | `Email:Enabled` | `false` | Enable email channel |
-| `Email:SmtpHost` | `smtp.gmail.com` | SMTP server |
-| `Email:SmtpPort` | `587` | SMTP port |
 | `Sms:Enabled` | `false` | Enable SMS fallback |
-| `Sms:Provider` | `twilio` | `twilio` or `webhook` |
+| `Sms:MessageTemplate` | (built-in) | SMS message template |
 | `Webhook:Url` | — | Callback URL for OTP events |
-| `Webhook:Secret` | — | Secret sent as `X-Webhook-Secret` header |
+| `Webhook:Secret` | — | Webhook verification secret |
 
-All settings can be overridden via environment variables using `__` as separator:
-`Otp__DailyLimit=20`, `Email__Enabled=true`, etc.
+Override via environment variables: `Otp__DailyLimit=20`, `Email__Enabled=true`, etc.
 
-## Integration Example
+## Integration Examples / أمثلة الربط
 
-### C# (ASP.NET Core)
+### C#
 
 ```csharp
 public class OtpClient(HttpClient http)
@@ -333,22 +297,15 @@ public class OtpClient(HttpClient http)
     record SendResult(bool Success, Guid? OtpId, string? Channel, string? Error);
     record VerifyResult(bool Verified, string? Error, string? Phone, string? Channel);
 }
-
-// Registration:
-// services.AddHttpClient<OtpClient>(c => {
-//     c.BaseAddress = new Uri("http://localhost:8080");
-//     c.DefaultRequestHeaders.Add("X-Api-Key", "your-key");
-// });
 ```
 
-### Python (requests)
+### Python
 
 ```python
 import requests
 
-OTP_URL = "http://localhost:8080"
-API_KEY = "your-key"
-HEADERS = {"X-Api-Key": API_KEY}
+OTP_URL = "http://localhost:5299"
+HEADERS = {"X-Api-Key": "your-key"}
 
 def send_otp(phone, email=None):
     r = requests.post(f"{OTP_URL}/otp/send",
@@ -365,24 +322,23 @@ def verify_otp(otp_id, code):
 
 ```bash
 # Send
-curl -X POST http://localhost:8080/otp/send \
+curl -X POST http://localhost:5299/otp/send \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: your-key" \
   -d '{"phone": "+9647701234567"}'
 
 # Verify
-curl -X POST http://localhost:8080/otp/verify \
+curl -X POST http://localhost:5299/otp/verify \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: your-key" \
   -d '{"otpId": "...", "code": "1234"}'
 ```
 
-## Project Structure
+## Project Structure / هيكل المشروع
 
 ```
 otp-gateway/
 ├── docker-compose.yml
-├── OtpGateway.sln
 ├── src/
 │   ├── OtpGateway/                  # Main server
 │   │   ├── Program.cs               # Entry point + DI
@@ -397,59 +353,60 @@ otp-gateway/
 │   │   │   └── CleanupJob.cs        # Expired OTP cleanup
 │   │   ├── Api/
 │   │   │   ├── OtpEndpoints.cs      # REST endpoints
-│   │   │   ├── ApiKeyAuthHandler.cs # Auth
+│   │   │   ├── ApiKeyAuthHandler.cs # Auth handler
 │   │   │   └── Dtos/
-│   │   └── Data/
-│   │       ├── AppDbContext.cs
+│   │   └── Storage/
+│   │       ├── AppDbContext.cs       # EF Core context
 │   │       └── Entities/
-│   └── OtpGateway.Setup/           # CLI setup tool
-│       └── Program.cs              # Interactive login
+│   └── OtpGateway.Setup/            # CLI setup tool
+│       └── Program.cs               # Interactive login
+├── data/                             # SQLite database (auto-created)
+└── sessions/                         # Telegram sessions (auto-created)
 ```
 
-## Deployment
+## Deployment / النشر
 
 ### Docker
 
 ```bash
-# Build and run
 docker compose up -d
-
-# With environment variables
-OTP_API_KEY=your-key docker compose up -d
 ```
 
 ### Standalone
 
 ```bash
-cd src/OtpGateway
-dotnet publish -c Release -o /opt/otp-gateway
-cd /opt/otp-gateway
+dotnet publish src/OtpGateway -c Release -o ./publish
+cd publish
 ApiKey=your-key dotnet OtpGateway.dll
 ```
 
-### Behind a Reverse Proxy
+### Behind Reverse Proxy / خلف بروكسي
 
-The gateway is designed to sit behind your existing Nginx/Caddy. Only your backend should reach it — do not expose it to the public internet.
+Only your backend should reach OTP Gateway — do not expose it publicly.
+
+فقط الباك إند مالتك يوصل للخدمة — لا تعرضها للإنترنت مباشرة.
 
 ```nginx
 location /otp-gateway/ {
-    proxy_pass http://127.0.0.1:8080/;
+    proxy_pass http://127.0.0.1:5299/;
     allow 127.0.0.1;
     deny all;
 }
 ```
 
-## Cost Comparison
+## Cost Comparison / مقارنة التكلفة
 
-For 500 OTPs/day (15,000/month), assuming 60% have Telegram, 35% have WhatsApp, 5% email-only:
+For 500 OTPs/day (15,000/month), assuming 60% Telegram, 35% WhatsApp, 5% email:
+
+لـ 500 OTP/يوم (15,000/شهر)، بافتراض 60% تلكرام، 35% واتساب، 5% إيميل:
 
 | Approach | Monthly Cost |
 |----------|-------------|
 | Twilio SMS only | ~$750 |
-| Twilio WhatsApp (current setup) | ~$750 (Twilio charges same) |
+| Twilio WhatsApp | ~$750 |
 | **OTP Gateway** | **~$42** |
 
-Breakdown: 9,000 Telegram (free) + 5,250 WhatsApp × $0.008 ($42) + 750 Email (free) = **$42/month instead of $750.**
+9,000 Telegram (free) + 5,250 WhatsApp × $0.008 ($42) + 750 Email (free) = **$42/month instead of $750.**
 
 ## License
 

@@ -58,7 +58,8 @@ public sealed class SmsChannel : IOtpChannel
             {
                 ["To"] = request.Phone,
                 ["From"] = fromNumber,
-                ["Body"] = $"Your verification code: {request.Code}\n\nDo not share this code."
+                ["Body"] = (_config["Sms:MessageTemplate"] ?? "Your verification code: {code}\n\nDo not share this code.")
+                    .Replace("{code}", request.Code).Replace("{phone}", request.Phone).Replace("{ref}", request.Ref ?? "")
             });
 
             var resp = await client.PostAsync(
@@ -102,7 +103,8 @@ public sealed class SmsChannel : IOtpChannel
             {
                 phone = request.Phone,
                 code = request.Code,
-                message = $"Your verification code: {request.Code}"
+                message = (_config["Sms:MessageTemplate"] ?? "Your verification code: {code}")
+                    .Replace("{code}", request.Code).Replace("{phone}", request.Phone).Replace("{ref}", request.Ref ?? "")
             });
 
             var resp = await client.PostAsync(url,

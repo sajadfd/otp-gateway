@@ -9,12 +9,19 @@ using OtpGateway.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var solutionRoot = FindSolutionRoot(builder.Environment.ContentRootPath);
-var defaultDb = Path.Combine(solutionRoot, "data", "otp.db");
-Directory.CreateDirectory(Path.GetDirectoryName(defaultDb)!);
-
-var connStr = builder.Configuration.GetConnectionString("Default")
-    ?? $"Data Source={defaultDb}";
+var configConnStr = builder.Configuration.GetConnectionString("Default");
+string connStr;
+if (!string.IsNullOrEmpty(configConnStr))
+{
+    connStr = configConnStr;
+}
+else
+{
+    var root = FindSolutionRoot(builder.Environment.ContentRootPath);
+    var dbPath = Path.GetFullPath(Path.Combine(root, "data", "otp.db"));
+    Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+    connStr = $"Data Source={dbPath}";
+}
 
 builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlite(connStr));
 

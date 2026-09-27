@@ -13,15 +13,31 @@ public sealed class TelegramChannel : IOtpChannel, IAsyncDisposable
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<TelegramChannel> _logger;
+    private readonly IConfiguration _config;
+    private readonly string _solutionRoot;
     private readonly List<ManagedClient> _clients = [];
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private bool _initialized;
     private int _roundRobin;
 
-    public TelegramChannel(IServiceScopeFactory scopeFactory, ILogger<TelegramChannel> logger)
+    public TelegramChannel(IServiceScopeFactory scopeFactory, ILogger<TelegramChannel> logger,
+        IConfiguration config, IWebHostEnvironment env)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _config = config;
+        _solutionRoot = FindSolutionRoot(env.ContentRootPath);
+    }
+
+    private static string FindSolutionRoot(string start)
+    {
+        var dir = start;
+        while (dir != null)
+        {
+            if (Directory.GetFiles(dir, "*.sln*").Length > 0) return dir;
+            dir = Path.GetDirectoryName(dir);
+        }
+        return start;
     }
 
     public async Task InitializeAsync(CancellationToken ct = default)
@@ -40,12 +56,16 @@ public sealed class TelegramChannel : IOtpChannel, IAsyncDisposable
             {
                 try
                 {
+                    var sessionPath = Path.IsPathRooted(account.SessionPath)
+                        ? account.SessionPath
+                        : Path.GetFullPath(Path.Combine(_solutionRoot, account.SessionPath));
+
                     var client = new WTelegram.Client(what => what switch
                     {
                         "api_id" => account.ApiId.ToString(),
                         "api_hash" => account.ApiHash,
                         "phone_number" => account.Phone,
-                        "session_pathname" => account.SessionPath,
+                        "session_pathname" => sessionPath,
                         _ => null
                     });
 
@@ -102,8 +122,14 @@ public sealed class TelegramChannel : IOtpChannel, IAsyncDisposable
                 var targetUser = contacts.users.Values.First();
                 var peer = new InputPeerUser(targetUser.id, targetUser.access_hash);
 
-                await managed.Client.SendMessageAsync(peer,
-                    $"🔐 Your verification code: *{request.Code}*\n\nDo not share this code with anyone.\nValid for 5 minutes.");
+                var template = _config["Telegram:MessageTemplate"]
+                    ?? "🔐 Your verification code: *{code}*\n\nDo not share this code with anyone.\nValid for 5 minutes.";
+                var message = template
+                    .Replace("{code}", request.Code)
+                    .Replace("{phone}", request.Phone)
+                    .Replace("{ref}", request.Ref ?? "");
+
+                await managed.Client.SendMessageAsync(peer, message);
 
                 // Clean up the imported contact
                 await managed.Client.Contacts_DeleteContacts([new InputUser(targetUser.id, targetUser.access_hash)]);
